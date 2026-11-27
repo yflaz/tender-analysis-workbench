@@ -22,7 +22,7 @@
       "properties": {
         "name": { "type": "string" },
         "owner": { "type": "string" },
-        "industry": { "type": "string", "enum": ["石油化工", "煤化工", "天然气", "电力", "其他"] },
+        "industry": { "type": "string" },
         "bid_deadline": { "type": ["string", "null"], "description": "ISO 8601 date or datetime when possible." },
         "document_language": { "type": "string" }
       }
@@ -49,7 +49,7 @@
         "properties": {
           "category": {
             "type": "string",
-            "enum": ["燃烧性能", "排放环保", "电仪控制", "材料制造", "检验试验", "防爆安全", "资料交付", "其他"]
+            "description": "根据标书内容确定分类。"
           },
           "requirement": { "type": "string" },
           "priority": { "type": "string", "enum": ["高", "中", "低"] },

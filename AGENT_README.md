@@ -1,5 +1,13 @@
 # 使用本地 Agent 分析标书
 
+## 供部署 Agent 阅读
+
+部署前决定分析由谁执行。已有能读取任务 JSON 的 Agent 会话时，可设置 `ANALYSIS_PROVIDER=agent`。部署要求网页直接调用模型，且已提供模型密钥与服务参数时，设置 `ANALYSIS_PROVIDER=api` 并注入 `ZHIPU_API_KEY`。
+
+启动或重启后读取 `GET /api/status`，确认 `analysisProvider` 与选定模式一致。API 模式同时检查 `configured` 为 `true`。Agent 模式通过下面的导出、分析和导入流程完成。
+
+## 处理导出的任务
+
 此流程使用你已有的 Codex、OpenClaw 或其他 Agent 会话，无需给工作台配置 API。Agent 自身可能连接模型服务，请按标书的保密要求选择运行环境。
 
 1. 启动工作台，输入投标方公司全名并上传标书。

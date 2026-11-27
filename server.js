@@ -7,6 +7,7 @@ const workflow = require("./workflow");
 const ROOT = __dirname;
 const DEFAULT_HOST = process.env.HOST || "0.0.0.0";
 const DEFAULT_PORT = Number(process.env.PORT || 5173);
+const ANALYSIS_PROVIDER = process.env.ANALYSIS_PROVIDER ?? "agent";
 const MAX_BODY_BYTES = 12 * 1024 * 1024;
 const PUBLIC_FILES = new Set(["/index.html", "/app.js", "/workflow.js", "/styles.css"]);
 
@@ -67,8 +68,10 @@ async function handleRequest(req, res) {
 }
 
 function getStatus() {
+  if (ANALYSIS_PROVIDER === "agent") return { analysisProvider: "agent" };
   const config = loadConfig();
   return {
+    analysisProvider: ANALYSIS_PROVIDER,
     provider: "zhipu",
     model: config.model,
     endpoint: maskEndpoint(config.endpoint),
@@ -79,11 +82,14 @@ function getStatus() {
 }
 
 async function handleAnalyze(req, res) {
+  if (ANALYSIS_PROVIDER !== "api") {
+    return sendJson(res, 403, { message: "此部署未启用在线 API 分析。" });
+  }
   const config = loadConfig();
   if (!config.apiKey) {
     return sendJson(res, 412, {
       error: "ZHIPU_API_KEY_MISSING",
-      message: "请设置服务器环境变量 ZHIPU_API_KEY，或使用本地 Agent 分析。",
+      message: "请在服务器配置 ZHIPU_API_KEY 后重启服务。",
     });
   }
 
@@ -322,5 +328,12 @@ function startServer(port, attempt = 0) {
   });
 }
 
-if (require.main === module) startServer(DEFAULT_PORT);
+if (require.main === module) {
+  if (!["agent", "api"].includes(ANALYSIS_PROVIDER)) {
+    console.error("ANALYSIS_PROVIDER must be agent or api.");
+    process.exitCode = 1;
+  } else {
+    startServer(DEFAULT_PORT);
+  }
+}
 module.exports = { handleRequest };

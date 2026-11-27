@@ -8,12 +8,23 @@
 
 支持一批 1 到 5 份 PDF 文本层、DOCX、TXT、MD 或 CSV，单份文件上限 30 MB，正文合计上限 12 万字符。扫描件需先 OCR。PDF 和 DOCX 的浏览器解析依赖 CDN。页面自带虚构示例。
 
+## 部署时选择分析方式
+
+负责部署的 Agent 或维护者应根据可用的凭据和分析流程，在服务器或容器环境中设置 `ANALYSIS_PROVIDER`。
+
+| 配置 | 适用场景 | 页面入口 |
+| --- | --- | --- |
+| `ANALYSIS_PROVIDER=agent`（默认） | 已有可处理标书的 Codex、OpenClaw 或其他 Agent 会话 | 导出 Agent 任务 / 导入 Agent 报告 |
+| `ANALYSIS_PROVIDER=api` | 部署方可以提供模型 API 密钥，并允许正文发送至模型服务 | 一键分析 |
+
+修改部署配置后重启服务。两个模式共用分析提示词、报告结构和评分规则。部署 Agent 可按 [AGENT_README.md](AGENT_README.md) 确定模式并验证状态。
+
 ## 在线分析
 
-在服务器环境中设置 `ZHIPU_API_KEY` 后启动。默认模型为 `glm-5.1`，开启深度思考。可用 `ZHIPU_ENDPOINT` 和 `ZHIPU_MODEL` 匹配账户所属平台及开通的模型。配置示例见 `.env.example`，该文件用于参考，`npm start` 读取已注入的环境变量。
+在服务器环境中设置 `ANALYSIS_PROVIDER=api` 和 `ZHIPU_API_KEY` 后启动。可用 `ZHIPU_ENDPOINT` 和 `ZHIPU_MODEL` 匹配账户所属平台及开通的模型。配置示例见 `.env.example`，`npm start` 读取已注入的环境变量。
 
 上传或拖入标书后点击“一键分析”。多文件模式按商务 25%、技术 30%、交付 20%、合规 25% 统一评分。各维度为 0–5 整数。原文证据不足的维度保留待复核，缺项时不计算总分，存在资格限制或待复核的项目不参加排序。在线分析会向模型服务发送公司名称和标书文本。
 
 ## 本地 Agent
 
-缺少 API 时，仍可运行单文件规则预览，或将单份及多份分析交给已有的本地 Agent。导出任务并将报告导回当前批次，完整操作见 [AGENT_README.md](AGENT_README.md)。下载的任务含标书原文，应按内部文件保管。
+Agent 模式可以将单份及多份分析交给已有的本地 Agent 会话。导出任务并将报告导回当前批次，完整操作见 [AGENT_README.md](AGENT_README.md)。下载的任务含标书原文，应按内部文件保管。
