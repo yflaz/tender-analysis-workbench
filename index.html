@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI 标书分析工作台</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script defer src="workflow.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">AI</span>
+          <div>
+            <strong>标书分析工作台</strong>
+            <span>燃烧器制造 · 石油化工项目</span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <span class="status-pill muted" id="apiStatusPill">检测模型</span>
+          <button class="ghost" id="copyJsonBtn" type="button">
+            <i data-lucide="copy"></i>
+            <span>复制JSON</span>
+          </button>
+          <button class="ghost" id="printBtn" type="button">
+            <i data-lucide="printer"></i>
+            <span>导出报告</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="side-nav" aria-label="模块导航">
+          <button class="nav-item active" type="button">
+            <i data-lucide="file-search"></i>
+            <span>标书分析</span>
+          </button>
+          <button class="nav-item" type="button">
+            <i data-lucide="database"></i>
+            <span>历史知识库</span>
+          </button>
+          <button class="nav-item" type="button">
+            <i data-lucide="clipboard-check"></i>
+            <span>模型评估</span>
+          </button>
+          <button class="nav-item" type="button">
+            <i data-lucide="shield-check"></i>
+            <span>权限审计</span>
+          </button>
+        </aside>
+
+        <main class="workspace">
+          <section class="workbench" aria-label="上传与处理">
+            <div class="upload-panel">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Tender Intake</span>
+                  <h1>上传标书</h1>
+                </div>
+                <span class="status-pill" id="modePill">原型模式</span>
+              </div>
+
+              <label class="field-label" for="companyName">投标方公司全名</label>
+              <input id="companyName" type="text" maxlength="150" autocomplete="organization" required />
+              <label class="drop-zone" id="dropZone" for="fileInput">
+                <input id="fileInput" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv" />
+                <i data-lucide="upload-cloud"></i>
+                <strong id="fileName">选择文件</strong>
+                <span>PDF / DOCX / TXT / MD / CSV · 最多 5 份</span>
+              </label>
+              <ul id="documentList"></ul>
+
+              <div class="control-strip" aria-label="分析设置">
+                <label class="compact-field" for="analysisMode">
+                  <span>分析目标</span>
+                  <select id="analysisMode">
+                    <option value="full">综合投标分析</option>
+                    <option value="risk">废标与风险审查</option>
+                    <option value="outsourcing">外包包件识别</option>
+                    <option value="management">管理层摘要</option>
+                  </select>
+                </label>
+                <label class="toggle-field" for="useAiToggle">
+                  <input id="useAiToggle" type="checkbox" checked />
+                  <span>GLM-5.1</span>
+                </label>
+              </div>
+
+              <label class="field-label" for="documentText">标书文本</label>
+              <textarea id="documentText" spellcheck="false"></textarea>
+              <p id="apiHint" class="status-line">正在检测 API 配置。</p>
+              <div class="status-line" id="statusMessage">等待上传</div>
+
+              <div class="button-row">
+                <button class="primary" id="analyzeBtn" type="button">
+                  <i data-lucide="sparkles"></i>
+                  <span>一键分析</span>
+                </button>
+                <button class="secondary" id="sampleBtn" type="button">
+                  <i data-lucide="flask-conical"></i>
+                  <span>示例标书</span>
+                </button>
+                <button class="secondary icon-only" id="clearBtn" type="button" aria-label="清空">
+                  <i data-lucide="eraser"></i>
+                </button>
+              </div>
+              <div class="button-row">
+                <button class="secondary" id="exportTask" type="button">导出 Agent 任务</button>
+                <button class="secondary" id="importReport" type="button">导入 Agent 报告</button>
+                <input id="reportFile" type="file" accept=".json,application/json" hidden />
+              </div>
+            </div>
+
+            <div class="pipeline-panel">
+              <div class="section-heading compact">
+                <div>
+                  <span class="eyebrow">AI Pipeline</span>
+                  <h2>处理链路</h2>
+                </div>
+                <span class="confidence" id="confidenceBadge">--</span>
+              </div>
+
+              <ol class="pipeline" id="pipeline">
+                <li data-step="parse" class="pipeline-step">
+                  <span></span>
+                  <div>
+                    <strong>文件解析</strong>
+                    <small>版式、表格、章节、附件</small>
+                  </div>
+                </li>
+                <li data-step="extract" class="pipeline-step">
+                  <span></span>
+                  <div>
+                    <strong>关键抽取</strong>
+                    <small>报价、技术、商务、工期</small>
+                  </div>
+                </li>
+                <li data-step="check" class="pipeline-step">
+                  <span></span>
+                  <div>
+                    <strong>合规校验</strong>
+                    <small>废标项、风险项、缺失项</small>
+                  </div>
+                </li>
+                <li data-step="report" class="pipeline-step">
+                  <span></span>
+                  <div>
+                    <strong>报告生成</strong>
+                    <small>摘要版、分析版、外包包件</small>
+                  </div>
+                </li>
+              </ol>
+            </div>
+          </section>
+
+          <section id="comparisonReport" class="results" aria-label="横向对比" hidden></section>
+          <section class="metric-grid" aria-label="关键指标">
+            <article class="metric">
+              <span>预计报价</span>
+              <strong id="metricQuote">--</strong>
+              <small id="metricQuoteNote">待分析</small>
+            </article>
+            <article class="metric">
+              <span>交货期</span>
+              <strong id="metricDelivery">--</strong>
+              <small id="metricDeliveryNote">待分析</small>
+            </article>
+            <article class="metric">
+              <span>投标截止</span>
+              <strong id="metricDeadline">--</strong>
+              <small id="metricDeadlineNote">待分析</small>
+            </article>
+            <article class="metric risk">
+              <span>风险等级</span>
+              <strong id="metricRisk">--</strong>
+              <small id="metricRiskNote">待分析</small>
+            </article>
+          </section>
+
+          <section class="results" aria-label="分析结果">
+            <div class="tabbar" role="tablist">
+              <button class="tab active" type="button" data-tab="summary">摘要版本</button>
+              <button class="tab" type="button" data-tab="analysis">分析型文档</button>
+              <button class="tab" type="button" data-tab="requirements">技术与风险</button>
+              <button class="tab" type="button" data-tab="outsourcing">外包建议</button>
+              <button class="tab" type="button" data-tab="actions">行动与证据</button>
+            </div>
+
+            <div class="tab-panel active" id="summary">
+              <div class="report-header">
+                <div>
+                  <span class="eyebrow">Executive Summary</span>
+                  <h2 id="projectTitle">待生成摘要</h2>
+                </div>
+                <span id="analysisTime">--</span>
+              </div>
+              <div class="summary-grid">
+                <div>
+                  <h3>决策摘要</h3>
+                  <ul id="summaryList" class="clean-list"></ul>
+                </div>
+                <div>
+                  <h3>部门关注</h3>
+                  <ul id="departmentList" class="clean-list"></ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="analysis">
+              <div class="table-toolbar">
+                <div>
+                  <span class="eyebrow">Commercial</span>
+                  <h2>报价清单</h2>
+                </div>
+                <span id="commercialScope">--</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>项目</th>
+                      <th>估算金额</th>
+                      <th>责任部门</th>
+                      <th>依据</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pricingTable"></tbody>
+                </table>
+              </div>
+
+              <div class="table-toolbar second">
+                <div>
+                  <span class="eyebrow">Schedule</span>
+                  <h2>项目时间</h2>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>阶段</th>
+                      <th>计划周期</th>
+                      <th>关键输出</th>
+                      <th>责任人</th>
+                    </tr>
+                  </thead>
+                  <tbody id="timelineTable"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="requirements">
+              <div class="table-toolbar">
+                <div>
+                  <span class="eyebrow">Technical</span>
+                  <h2>技术要求</h2>
+                </div>
+                <span id="requirementCount">--</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>类别</th>
+                      <th>要求</th>
+                      <th>优先级</th>
+                      <th>责任部门</th>
+                    </tr>
+                  </thead>
+                  <tbody id="requirementsTable"></tbody>
+                </table>
+              </div>
+
+              <div class="risk-list" id="riskList"></div>
+            </div>
+
+            <div class="tab-panel" id="outsourcing">
+              <div class="table-toolbar">
+                <div>
+                  <span class="eyebrow">Package</span>
+                  <h2>外包包件</h2>
+                </div>
+                <span id="outsourcingCount">--</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>包件</th>
+                      <th>建议范围</th>
+                      <th>触发依据</th>
+                      <th>交付物</th>
+                    </tr>
+                  </thead>
+                  <tbody id="outsourcingTable"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="actions">
+              <div class="table-toolbar">
+                <div>
+                  <span class="eyebrow">Compliance</span>
+                  <h2>行动清单</h2>
+                </div>
+                <span id="sourceCount">--</span>
+              </div>
+
+              <div class="action-grid">
+                <section class="action-block">
+                  <h3>必须响应</h3>
+                  <ul id="mustRespondList" class="clean-list"></ul>
+                </section>
+                <section class="action-block">
+                  <h3>偏离与缺失</h3>
+                  <ul id="deviationList" class="clean-list"></ul>
+                </section>
+                <section class="action-block">
+                  <h3>待澄清问题</h3>
+                  <ul id="clarificationList" class="clean-list"></ul>
+                </section>
+              </div>
+
+              <div class="table-toolbar second">
+                <div>
+                  <span class="eyebrow">Evidence</span>
+                  <h2>证据追溯</h2>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>章节</th>
+                      <th>页码</th>
+                      <th>原文片段</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sourceTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

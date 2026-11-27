@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+config.local.json
+.agent-work/
+*.zip
+sample/
+assets/
+.server-port
+node_modules/
+npm-debug.log*

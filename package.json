@@ -1,0 +1,12 @@
+{
+  "name": "ai-bid-document-analyzer",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Tender analysis and comparison workbench",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}

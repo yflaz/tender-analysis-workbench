@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log*
+.server-port
+.git
+.env*
+config.local.json
+.agent-work
+*.zip
+sample
+assets

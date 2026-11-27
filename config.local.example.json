@@ -1,0 +1,8 @@
+{
+  "endpoint": "https://api.z.ai/api/paas/v4/chat/completions",
+  "model": "glm-5.1",
+  "temperature": 0.2,
+  "maxTokens": 65536,
+  "thinking": "enabled",
+  "timeoutMs": 300000
+}
